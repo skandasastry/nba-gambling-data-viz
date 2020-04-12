@@ -160,6 +160,7 @@ CREATE TABLE IF NOT EXISTS player_info (
     height_feet,
     height_inches, 
     height
+    );
 
     
 
