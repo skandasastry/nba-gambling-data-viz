@@ -38,13 +38,8 @@ CREATE TABLE IF NOT EXISTS games (
     season VARCHAR(20)
 );
 
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_games_all.csv"
-INTO TABLE games 
-FIELDS TERMINATED BY ',';
-
 
 DROP TABLE IF EXISTS betting_lines;
-
 CREATE TABLE IF NOT EXISTS betting_lines (
 	game_id BIGINT,
 	sportsbook_name VARCHAR(20),
@@ -54,12 +49,6 @@ CREATE TABLE IF NOT EXISTS betting_lines (
     price1 INT SIGNED,
     price2 INT SIGNED
 );
-
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_money_line.csv"
-INTO TABLE betting_lines 
-FIELDS TERMINATED BY ','
-IGNORE 1 LINES;
-
 
 DROP TABLE IF EXISTS betting_spreads;
 CREATE TABLE IF NOT EXISTS betting_spreads (
@@ -73,11 +62,6 @@ CREATE TABLE IF NOT EXISTS betting_spreads (
     price1 INT SIGNED,
     price2 INT SIGNED
     );
-
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_spread.csv"
-INTO TABLE betting_spreads
-FIELDS TERMINATED BY ','
-IGNORE 1 LINES;
 
 DROP TABLE IF EXISTS player_game_data;
 CREATE TABLE IF NOT EXISTS player_game_data (
@@ -116,6 +100,104 @@ CREATE TABLE IF NOT EXISTS player_game_data (
     season VARCHAR(10)
     );
 
+    
+DROP TABLE IF EXISTS player_info;
+CREATE TABLE IF NOT EXISTS player_info (
+	person_id BIGINT,
+    last_comma_first VARCHAR(50),
+    first_last VARCHAR(50),
+    is_active TEXT(1),
+    from_year INT,
+    to_year INT,
+    playercode VARCHAR(50),
+    games_played TEXT(1),
+    pos VARCHAR(30),
+    draft_year INT,
+    draft_round TINYINT, 
+    height_feet TINYINT,
+    height_inches TINYINT, 
+    height DEC(11,10), 
+    weight INT,
+    season_exp INT,
+    school VARCHAR(50),
+    country VARCHAR(50),
+    last_affiliation VARCHAR(50)
+    );
+    
+    
+DROP TABLE IF EXISTS team_info;
+CREATE TABLE IF NOT EXISTS team_info (
+	league_id TINYINT,
+    team_id BIGINT,
+    min_year INT,
+    max_year INT,
+    team_abbr TEXT(3)
+);
+
+
+DROP TABLE IF EXISTS betting_overUnders;
+CREATE TABLE IF NOT EXISTS betting_overUnders (
+	game_id BIGINT,
+    book_name VARCHAR(30),
+    book_id BIGINT,
+    team_id BIGINT,
+    opp_id BIGINT,
+    overUnder1 INT,
+    overUnder2 INT,
+    price1 INT,
+    price2 INT
+);
+
+-- Loading data into games table from csv
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_games_all.csv"
+INTO TABLE games 
+FIELDS TERMINATED BY ','
+IGNORE 1 LINES
+(game_id, @game_date, matchup, team_id, is_home, win_loss, @win_amt, @loss_amt, @win_pct, 
+@fgm, @fga, @fg_pct, @fg3m, @fg3a, @fg3_pct, @ftm, @fta, @ft_pct, @oreb, @dreb, @reb, @ast, @stl, @blk, 
+@tov, @fouls, pts, opp_id, season_year,season_type, season)
+SET 
+game_date = NULLIF(@game_date, ''),
+win_amt = NULLIF(@win_amt, ''),
+loss_amt = NULLIF(@loss_amt, ''),
+win_pct = NULLIF(@win_pct, ''),
+fgm = NULLIF(@fgm, ''),
+fga = NULLIF(@fga, ''),
+fg_pct = NULLIF(@fg_pct, ''),
+fg3m = NULLIF(@fg3m, ''),
+fg3_pct = NULLIF(@fg3_pct, ''),
+ftm = NULLIF(@ftm, ''),
+fta = NULLIF(@fta, ''),
+ft_pct = NULLIF(@ft_pct, ''),
+oreb = NULLIF(@oreb, ''),
+dreb = NULLIF(@dreb, ''),
+reb = NULLIF(@reb, ''),
+ast = NULLIF(@ast, ''),
+stl = NULLIF(@stl, ''),
+blk = NULLIF(@blk, ''),
+tov = NULLIF(@tov, ''),
+fouls = NULLIF(@fouls, '')
+;
+
+-- fixes a bug associated with free throw percentage of old games
+UPDATE games
+SET ft_pct= CASE
+   WHEN fta !=0 THEN ROUND(ftm/fta, 3)
+   ELSE NULL
+END;
+
+
+-- loading data into 
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_money_line.csv"
+INTO TABLE betting_lines 
+FIELDS TERMINATED BY ','
+IGNORE 1 LINES;
+
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_spread.csv"
+INTO TABLE betting_spreads
+FIELDS TERMINATED BY ','
+IGNORE 1 LINES;
+
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_game_stats.csv"
 INTO TABLE player_game_data
 FIELDS TERMINATED BY ','
@@ -143,30 +225,7 @@ tov = NULLIF(@tov, ''),
 pf = NULLIF(@pf, ''),
 plus_minus = NULLIF(@plus_minus, '')
 ;
-    
-DROP TABLE IF EXISTS player_info;
-CREATE TABLE IF NOT EXISTS player_info (
-	person_id BIGINT,
-    last_comma_first VARCHAR(50),
-    first_last VARCHAR(50),
-    is_active TEXT(1),
-    from_year INT,
-    to_year INT,
-    playercode VARCHAR(50),
-    games_played TEXT(1),
-    pos VARCHAR(30),
-    draft_year INT,
-    draft_round TINYINT, 
-    height_feet TINYINT,
-    height_inches TINYINT, 
-    height DEC(11,10), 
-    weight INT,
-    season_exp INT,
-    school VARCHAR(50),
-    country VARCHAR(50),
-    last_affiliation VARCHAR(50)
-    );
-    
+
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_all.csv"
 INTO TABLE player_info
 FIELDS TERMINATED BY ','
@@ -189,15 +248,6 @@ weight = NULLIF(@weight, ''),
 school = NULLIF(@school, '')
 ;
 
-DROP TABLE IF EXISTS team_info;
-CREATE TABLE IF NOT EXISTS team_info (
-	league_id TINYINT,
-    team_id BIGINT,
-    min_year INT,
-    max_year INT,
-    team_abbr TEXT(3)
-);
-
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_teams_all.csv"
 INTO TABLE team_info
 FIELDS TERMINATED BY ','
@@ -210,19 +260,6 @@ max_year = NULLIF(@max_year, ''),
 team_abbr = NULLIF(@team_abbr, '')
 ;
 
-DROP TABLE IF EXISTS betting_overUnders;
-CREATE TABLE IF NOT EXISTS betting_overUnders (
-	game_id BIGINT,
-    book_name VARCHAR(30),
-    book_id BIGINT,
-    team_id BIGINT,
-    opp_id BIGINT,
-    overUnder1 INT,
-    overUnder2 INT,
-    price1 INT,
-    price2 INT
-);
-
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_totals.csv"
 INTO TABLE betting_overUnders
 FIELDS TERMINATED BY ','
@@ -230,7 +267,3 @@ OPTIONALLY ENCLOSED BY '"'
 IGNORE 1 LINES
 (game_id, book_name, book_id, team_id, opp_id, overUnder1, overUnder2, price1, price2)
 ;
-
-
-    
-
