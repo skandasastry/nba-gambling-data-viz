@@ -156,11 +156,40 @@ CREATE TABLE IF NOT EXISTS player_info (
     games_played TEXT(1),
     pos VARCHAR(30),
     draft_year INT,
-    draft_round, 
-    height_feet,
-    height_inches, 
-    height
+    draft_round TINYINT, 
+    height_feet TINYINT,
+    height_inches TINYINT, 
+    height DEC(11,10), 
+    weight INT,
+    season_exp INT,
+    school VARCHAR(50),
+    country VARCHAR(50),
+    last_affiliation VARCHAR(50)
     );
+    
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_all.csv"
+INTO TABLE player_info
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY "\r\n"
+IGNORE 1 LINES
+(person_id, last_comma_first, first_last, is_active, @from_year, @to_year, playercode,
+games_played,@pos, @draft_year, @draft_round, @height_feet, @height_inches, @height, @weight,
+season_exp, @school, country, last_affiliation)
+SET
+from_year = NULLIF(@from_year, ''),
+to_year = NULLIF(@to_year, ''),
+pos = NULLIF(@pos, ''),
+draft_year = NULLIF(@draft_year, ''),
+draft_round = NULLIF(@draft_round, ''),
+height_feet = NULLIF(@height_feet, ''),
+height_inches = NULLIF(@height_inches, ''),
+height = NULLIF(@height, ''),
+weight = NULLIF(@weight, ''),
+school = NULLIF(@school, '')
+;
+
+
 
     
 
