@@ -189,6 +189,47 @@ weight = NULLIF(@weight, ''),
 school = NULLIF(@school, '')
 ;
 
+DROP TABLE IF EXISTS team_info;
+CREATE TABLE IF NOT EXISTS team_info (
+	league_id TINYINT,
+    team_id BIGINT,
+    min_year INT,
+    max_year INT,
+    team_abbr TEXT(3)
+);
+
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_teams_all.csv"
+INTO TABLE team_info
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+IGNORE 1 LINES
+(league_id, team_id, @min_year, @max_year, @team_abbr)
+SET
+min_year = NULLIF(@min_year, ''),
+max_year = NULLIF(@max_year, ''),
+team_abbr = NULLIF(@team_abbr, '')
+;
+
+DROP TABLE IF EXISTS betting_overUnders;
+CREATE TABLE IF NOT EXISTS betting_overUnders (
+	game_id BIGINT,
+    book_name VARCHAR(30),
+    book_id BIGINT,
+    team_id BIGINT,
+    opp_id BIGINT,
+    overUnder1 INT,
+    overUnder2 INT,
+    price1 INT,
+    price2 INT
+);
+
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_totals.csv"
+INTO TABLE betting_overUnders
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+IGNORE 1 LINES
+(game_id, book_name, book_id, team_id, opp_id, overUnder1, overUnder2, price1, price2)
+;
 
 
     
