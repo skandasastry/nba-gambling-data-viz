@@ -2,6 +2,17 @@ DROP DATABASE IF EXISTS nba_betting;
 CREATE DATABASE nba_betting;
 USE nba_betting;
 
+DROP TABLE IF EXISTS team_info;
+CREATE TABLE IF NOT EXISTS team_info (
+	league_id TINYINT,
+    team_id BIGINT,
+    min_year INT,
+    max_year INT,
+    team_abbr TEXT(3),
+    
+    CONSTRAINT PRIMARY KEY pk_team(team_id)
+)ENGINE = InnoDB;
+
 
 DROP TABLE IF EXISTS games;
 CREATE TABLE IF NOT EXISTS games (
@@ -35,7 +46,11 @@ CREATE TABLE IF NOT EXISTS games (
     opp_id BIGINT,
     season_year INT,
     season_type VARCHAR(40),
-    season VARCHAR(20)
+    season VARCHAR(20),
+    
+    CONSTRAINT pk_games PRIMARY KEY(game_id, team_id, opp_id),
+    CONSTRAINT fk_teams_gms FOREIGN KEY(team_id) REFERENCES
+		team_info(team_id)
 )ENGINE = InnoDB;
 
 
@@ -47,7 +62,36 @@ CREATE TABLE IF NOT EXISTS betting_lines (
     team_id BIGINT,
     opp_team_id BIGINT,
     price1 INT SIGNED,
-    price2 INT SIGNED
+    price2 INT SIGNED,
+    
+    CONSTRAINT pk_lines PRIMARY KEY (game_id, book_id, team_id, opp_team_id),
+    CONSTRAINT fk_lines_games FOREIGN KEY(game_id, team_id, opp_team_id)
+		REFERENCES games(game_id, team_id, opp_id),
+	
+    CONSTRAINT fk_teams_lines FOREIGN KEY (team_id) REFERENCES
+		team_info(team_id)
+    
+)ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS betting_overUnders;
+CREATE TABLE IF NOT EXISTS betting_overUnders (
+	game_id BIGINT,
+    book_name VARCHAR(30),
+    book_id BIGINT,
+    team_id BIGINT,
+    opp_id BIGINT,
+    overUnder1 INT,
+    overUnder2 INT,
+    price1 INT,
+    price2 INT,
+    
+    CONSTRAINT pk_overs PRIMARY KEY (game_id, book_id, team_id, opp_id),
+	CONSTRAINT fk_overs FOREIGN KEY (game_id, team_id, opp_id) REFERENCES
+		games(game_id, team_id, opp_id),
+        
+	CONSTRAINT fk_teams_overs FOREIGN KEY (team_id) REFERENCES
+		team_info(team_id)
+    
 )ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS betting_spreads;
@@ -60,8 +104,44 @@ CREATE TABLE IF NOT EXISTS betting_spreads (
     spread1 DEC(4,1),
     spread2 DEC(4,1),
     price1 INT SIGNED,
-    price2 INT SIGNED
+    price2 INT SIGNED,
+    
+    CONSTRAINT pk_spreads PRIMARY KEY(game_id, book_id, team_id, opp_team_id),
+    
+    CONSTRAINT fk_spreads FOREIGN KEY(game_id, team_id, opp_team_id)
+		REFERENCES games(game_id, team_id, opp_id),
+	
+	CONSTRAINT fk_teams_spreads FOREIGN KEY (team_id)
+		REFERENCES team_info(team_id)
+)ENGINE = InnoDB;
+
+
+DROP TABLE IF EXISTS player_info;
+CREATE TABLE IF NOT EXISTS player_info (
+	person_id BIGINT,
+    last_comma_first VARCHAR(50),
+    first_last VARCHAR(50),
+    is_active TEXT(1),
+    from_year INT,
+    to_year INT,
+    playercode VARCHAR(50),
+    games_played TEXT(1),
+    pos VARCHAR(30),
+    draft_year INT,
+    draft_round TINYINT, 
+    height_feet TINYINT,
+    height_inches TINYINT, 
+    height DEC(11,10), 
+    weight INT,
+    season_exp INT,
+    school VARCHAR(50),
+    country VARCHAR(50),
+    last_affiliation VARCHAR(50),
+    
+    CONSTRAINT pk_players PRIMARY KEY (person_id)
     )ENGINE = InnoDB;
+    
+
 
 DROP TABLE IF EXISTS player_game_data;
 CREATE TABLE IF NOT EXISTS player_game_data (
@@ -97,56 +177,28 @@ CREATE TABLE IF NOT EXISTS player_game_data (
     plus_minus INT,
     season_type VARCHAR(20),
     season_year INT,
-    season VARCHAR(10)
+    season VARCHAR(10),
+    
+    CONSTRAINT pk_player_game_stats PRIMARY KEY (player_id, game_id),
+    CONSTRAINT fk_player_team FOREIGN KEY (team_id) 
+		REFERENCES team_info(team_id),
+	CONSTRAINT fk_playerID FOREIGN KEY (player_id)
+		REFERENCES player_info(person_id)
     )ENGINE = InnoDB;
 
     
-DROP TABLE IF EXISTS player_info;
-CREATE TABLE IF NOT EXISTS player_info (
-	person_id BIGINT,
-    last_comma_first VARCHAR(50),
-    first_last VARCHAR(50),
-    is_active TEXT(1),
-    from_year INT,
-    to_year INT,
-    playercode VARCHAR(50),
-    games_played TEXT(1),
-    pos VARCHAR(30),
-    draft_year INT,
-    draft_round TINYINT, 
-    height_feet TINYINT,
-    height_inches TINYINT, 
-    height DEC(11,10), 
-    weight INT,
-    season_exp INT,
-    school VARCHAR(50),
-    country VARCHAR(50),
-    last_affiliation VARCHAR(50)
-    )ENGINE = InnoDB;
-    
-    
-DROP TABLE IF EXISTS team_info;
-CREATE TABLE IF NOT EXISTS team_info (
-	league_id TINYINT,
-    team_id BIGINT,
-    min_year INT,
-    max_year INT,
-    team_abbr TEXT(3)
-)ENGINE = InnoDB;
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_teams_all.csv"
+INTO TABLE team_info
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+IGNORE 1 LINES
+(league_id, team_id, @min_year, @max_year, @team_abbr)
+SET
+min_year = NULLIF(@min_year, ''),
+max_year = NULLIF(@max_year, ''),
+team_abbr = NULLIF(@team_abbr, '')
+;
 
-
-DROP TABLE IF EXISTS betting_overUnders;
-CREATE TABLE IF NOT EXISTS betting_overUnders (
-	game_id BIGINT,
-    book_name VARCHAR(30),
-    book_id BIGINT,
-    team_id BIGINT,
-    opp_id BIGINT,
-    overUnder1 INT,
-    overUnder2 INT,
-    price1 INT,
-    price2 INT
-)ENGINE = InnoDB;
 
 -- Loading data into games table from csv
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_games_all.csv"
@@ -165,6 +217,7 @@ fgm = NULLIF(@fgm, ''),
 fga = NULLIF(@fga, ''),
 fg_pct = NULLIF(@fg_pct, ''),
 fg3m = NULLIF(@fg3m, ''),
+fg3a = NULLIF(@fg3a, ''),
 fg3_pct = NULLIF(@fg3_pct, ''),
 ftm = NULLIF(@ftm, ''),
 fta = NULLIF(@fta, ''),
@@ -179,13 +232,6 @@ tov = NULLIF(@tov, ''),
 fouls = NULLIF(@fouls, '')
 ;
 
--- fixes a bug associated with free throw percentage of old games
-UPDATE games
-SET ft_pct= CASE
-   WHEN fta !=0 THEN ROUND(ftm/fta, 3)
-   ELSE NULL
-END;
-
 
 -- loading data into 
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_money_line.csv"
@@ -193,10 +239,41 @@ INTO TABLE betting_lines
 FIELDS TERMINATED BY ','
 IGNORE 1 LINES;
 
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_totals.csv"
+INTO TABLE betting_overUnders
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+IGNORE 1 LINES
+(game_id, book_name, book_id, team_id, opp_id, overUnder1, overUnder2, price1, price2)
+;
+
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_spread.csv"
 INTO TABLE betting_spreads
 FIELDS TERMINATED BY ','
 IGNORE 1 LINES;
+
+
+LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_all.csv"
+INTO TABLE player_info
+FIELDS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY "\r\n"
+IGNORE 1 LINES
+(person_id, last_comma_first, first_last, is_active, @from_year, @to_year, playercode,
+games_played,@pos, @draft_year, @draft_round, @height_feet, @height_inches, @height, @weight,
+season_exp, @school, country, last_affiliation)
+SET
+from_year = NULLIF(@from_year, ''),
+to_year = NULLIF(@to_year, ''),
+pos = NULLIF(@pos, ''),
+draft_year = NULLIF(@draft_year, ''),
+draft_round = NULLIF(@draft_round, ''),
+height_feet = NULLIF(@height_feet, ''),
+height_inches = NULLIF(@height_inches, ''),
+height = NULLIF(@height, ''),
+weight = NULLIF(@weight, ''),
+school = NULLIF(@school, '')
+;
 
 LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_game_stats.csv"
 INTO TABLE player_game_data
@@ -224,46 +301,4 @@ blk = NULLIF(@blk, ''),
 tov = NULLIF(@tov, ''),
 pf = NULLIF(@pf, ''),
 plus_minus = NULLIF(@plus_minus, '')
-;
-
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_players_all.csv"
-INTO TABLE player_info
-FIELDS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-LINES TERMINATED BY "\r\n"
-IGNORE 1 LINES
-(person_id, last_comma_first, first_last, is_active, @from_year, @to_year, playercode,
-games_played,@pos, @draft_year, @draft_round, @height_feet, @height_inches, @height, @weight,
-season_exp, @school, country, last_affiliation)
-SET
-from_year = NULLIF(@from_year, ''),
-to_year = NULLIF(@to_year, ''),
-pos = NULLIF(@pos, ''),
-draft_year = NULLIF(@draft_year, ''),
-draft_round = NULLIF(@draft_round, ''),
-height_feet = NULLIF(@height_feet, ''),
-height_inches = NULLIF(@height_inches, ''),
-height = NULLIF(@height, ''),
-weight = NULLIF(@weight, ''),
-school = NULLIF(@school, '')
-;
-
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_teams_all.csv"
-INTO TABLE team_info
-FIELDS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-IGNORE 1 LINES
-(league_id, team_id, @min_year, @max_year, @team_abbr)
-SET
-min_year = NULLIF(@min_year, ''),
-max_year = NULLIF(@max_year, ''),
-team_abbr = NULLIF(@team_abbr, '')
-;
-
-LOAD DATA INFILE "C:/Users/skand/Documents/Vanderbilt/3rd Year/CS 3265/data_csvs/nba-stats-betting/nba_betting_totals.csv"
-INTO TABLE betting_overUnders
-FIELDS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-IGNORE 1 LINES
-(game_id, book_name, book_id, team_id, opp_id, overUnder1, overUnder2, price1, price2)
 ;
